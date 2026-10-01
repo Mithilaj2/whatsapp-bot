@@ -40,7 +40,9 @@ export function Dashboard() {
           <>
             <section>
               <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-              <p className="text-sm text-slate-600">Your role: {tenant.role}</p>
+              <p className="text-sm text-slate-600">
+                Your role: {tenant.role} · Business ID: <code className="select-all text-xs">{tenant.id}</code>
+              </p>
             </section>
             <Routes>
               <Route index element={<Inbox key={tenant.id} />} />

@@ -1,0 +1,29 @@
+{
+	frankenphp
+}
+
+{$SERVER_NAME:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	# The Laravel API, including Meta's webhook at /api/webhooks/whatsapp.
+	@backend path /api/* /up
+	handle @backend {
+		root * /app/backend/public
+		php_server
+	}
+
+	# Everything else is the React dashboard.
+	handle {
+		root * /app/frontend/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

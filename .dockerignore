@@ -1,0 +1,10 @@
+**/node_modules
+**/vendor
+frontend/dist
+backend/.env
+deploy/.env
+backend/storage/logs/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+.git

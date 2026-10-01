@@ -6,6 +6,7 @@ WhatsApp Cloud API as a Meta Tech Provider.
 - `backend/`: Laravel 12 API and workers (PHP 8.3, PostgreSQL 16 + pgvector, Redis)
 - `frontend/`: React + TypeScript dashboard (Vite, Tailwind)
 - `docker/postgres/init.sql`: database roles, run once when Postgres is created
+- `deploy/`: Docker setup for a staging server with HTTPS (see `deploy/README.md`)
 
 ## Run it locally
 
