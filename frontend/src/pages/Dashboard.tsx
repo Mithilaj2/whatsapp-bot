@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
+import { NavLink, Route, Routes } from 'react-router-dom'
 import { Button, Field } from '../components/Field'
 import { ApiError, api, post } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { Team } from '../lib/types'
+import { Inbox } from './Inbox'
 
 export function Dashboard() {
   const { me, tenant, switchTenant, logout } = useAuth()
@@ -11,7 +13,11 @@ export function Dashboard() {
   return (
     <div className="min-h-screen">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-        <span className="font-semibold">WhatsApp Bot</span>
+        <nav className="flex items-center gap-4 text-sm">
+          <span className="font-semibold">WhatsApp Bot</span>
+          <NavLink to="/" end className={navClass}>Inbox</NavLink>
+          <NavLink to="/teams" className={navClass}>Teams</NavLink>
+        </nav>
         <div className="flex items-center gap-3 text-sm">
           {me && me.tenants.length > 1 && (
             <select
@@ -29,14 +35,17 @@ export function Dashboard() {
           <button onClick={logout} className="text-emerald-700 underline">Sign out</button>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
         {tenant ? (
           <>
             <section>
               <h1 className="text-2xl font-semibold">{tenant.name}</h1>
               <p className="text-sm text-slate-600">Your role: {tenant.role}</p>
             </section>
-            <Teams key={tenant.id} canManage={['owner', 'admin', 'supervisor'].includes(tenant.role)} />
+            <Routes>
+              <Route index element={<Inbox key={tenant.id} />} />
+              <Route path="teams" element={<Teams key={tenant.id} canManage={['owner', 'admin', 'supervisor'].includes(tenant.role)} />} />
+            </Routes>
           </>
         ) : (
           <p>You are not a member of any business yet.</p>
@@ -45,6 +54,9 @@ export function Dashboard() {
     </div>
   )
 }
+
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  isActive ? 'font-medium text-emerald-700' : 'text-slate-600 hover:text-slate-900'
 
 function Teams({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient()
