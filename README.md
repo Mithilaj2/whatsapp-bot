@@ -30,6 +30,44 @@ security is part of what they check:
 cd backend && php artisan test
 ```
 
+## Connect a WhatsApp number (testing)
+
+Until Embedded Signup (phase 3) is built, connect Meta's free test number by hand:
+
+1. In your Meta app: WhatsApp → API Setup. Note the phone number ID, the
+   WhatsApp Business Account ID and a temporary access token.
+2. In `backend/.env`, set `META_APP_ID`, `META_APP_SECRET` (App settings → Basic)
+   and `META_WEBHOOK_VERIFY_TOKEN` (any long random string).
+3. Connect the number to a business (the business id is in `/api/me`):
+
+   ```bash
+   WHATSAPP_ACCESS_TOKEN=... php artisan whatsapp:connect <business-id> \
+       --waba=<waba-id> --phone-number-id=<phone-number-id>
+   ```
+
+   This checks the token with Meta, subscribes the app to the account's
+   webhooks and stores the token encrypted.
+4. Give Meta a public HTTPS URL for `/api/webhooks/whatsapp` (a server, or a
+   tunnel such as `ngrok http 8000`). In the app's WhatsApp → Configuration,
+   enter that URL and the verify token, and subscribe to the `messages` field.
+5. Run a queue worker: `php artisan queue:work --queue=webhooks,outbound,default`.
+
+Message your test number from WhatsApp; it appears in the dashboard inbox.
+
+## How messages flow
+
+1. Meta POSTs to `/api/webhooks/whatsapp`. The receiver checks
+   `X-Hub-Signature-256` against the App Secret, stores the raw payload in
+   `webhook_events`, queues it and answers 200. It never calls Meta.
+2. `ProcessWhatsAppWebhook` finds the business by phone-number id
+   (`meta_routes`), then stores the contact, conversation and message inside
+   that business. Duplicates are ignored by wamid; statuses only move forward,
+   so out-of-order delivery is safe.
+3. Replies are saved as `queued` and sent by `SendWhatsAppMessage`, rate-limited
+   per number, with the client's own token (decrypted only there).
+4. Free-form replies need the 24-hour customer service window to be open;
+   after that only templates can be sent.
+
 ## How tenant isolation works
 
 Every business is a tenant. All tenant data lives in one shared schema with a
@@ -79,4 +117,10 @@ New tenant tables: add `tenant_id`, call
 | GET, POST | `/api/teams` | POST: owner, admin, supervisor |
 | DELETE | `/api/teams/{id}` | Owner, admin, supervisor |
 
-Routes below `/api/tenant`, `/api/members` and `/api/teams` need the `X-Tenant-Id` header.
+| GET | `/api/phone-numbers` | Connected WhatsApp numbers |
+| GET | `/api/conversations` | Inbox, newest first |
+| GET | `/api/conversations/{id}/messages` | |
+| POST | `/api/conversations/{id}/messages` | `{type: text, text}` or `{type: template, template: {name, language}}` (not viewers) |
+| GET, POST | `/api/webhooks/whatsapp` | Meta only; signed, no login |
+
+All routes except auth, `/api/me`, `/api/tenants` and the webhook need the `X-Tenant-Id` header.
