@@ -67,3 +67,16 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the server image
+        run: docker build -f deploy/Dockerfile -t whatsapp-bot:ci .
+
+      - name: Check PHP extensions and the app boot
+        run: |
+          docker run --rm whatsapp-bot:ci php -m | grep -E '^(pdo_pgsql|redis|intl|pcntl)$'
+          docker run --rm -e APP_KEY=base64:$(openssl rand -base64 32) whatsapp-bot:ci php artisan --version
